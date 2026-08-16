@@ -80,33 +80,17 @@ func (p *Processor) updateUserInfo(ctx context.Context, m Meta) error {
 }
 
 func (p *Processor) resolveCmd(cmdRaw, chatType string) (string, bool) {
-	isPrivate := chatType == "private"
-	mentionBot := strings.Contains(cmdRaw, "@")
+	baseCmd, botName, hasMention := strings.Cut(cmdRaw, "@")
 
-	if !isPrivate && !mentionBot {
+	if chatType != "private" && !hasMention {
 		return "", false
 	}
 
-	if !mentionBot {
-		return cmdRaw, true
+	if hasMention && p.botUsername != "" && !strings.EqualFold(botName, p.botUsername) {
+		return "", false
 	}
 
-	return p.normalizeCmd(cmdRaw)
-}
-
-func (p *Processor) normalizeCmd(cmdRaw string) (string, bool) {
-	cmd := cmdRaw
-	if i := strings.IndexByte(cmdRaw, '@'); i != -1 {
-		base := cmdRaw[:i]
-		bot := cmdRaw[i+1:]
-
-		if p.botUsername != "" && !strings.EqualFold(bot, p.botUsername) {
-			return "", false
-		}
-		cmd = base
-	}
-
-	return cmd, true
+	return baseCmd, true
 }
 
 func (p *Processor) savePage(ctx context.Context, chatID, userID int64, pageURL, username string) (err error) {
